@@ -105,11 +105,32 @@
 
     /* ── Loading ─────────────────────────────── */
     #loadingPanel { display: none; }
-    .loading-inner { display: flex; flex-direction: column; align-items: center; padding: 8px 0; gap: 14px; }
-    .spinner-ring { width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--bdr-hi); border-top-color: var(--acc); animation: spin 0.9s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-text { font-family: 'Share Tech Mono', monospace; font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; animation: fade 1.6s ease-in-out infinite; }
-    @keyframes fade { 0%,100%{opacity:1} 50%{opacity:0.35} }
+    .loading-inner { display: flex; flex-direction: column; gap: 14px; padding: 4px 0; }
+    .loading-label-row { display: flex; align-items: center; justify-content: space-between; }
+    .loading-text { font-family: 'Share Tech Mono', monospace; font-size: 0.72rem; color: var(--acc); letter-spacing: 2px; }
+    .loading-pct  { font-family: 'Share Tech Mono', monospace; font-size: 0.62rem; color: var(--text-lo); letter-spacing: 1px; }
+    .loading-bar-track {
+      width: 100%;
+      height: 3px;
+      background: var(--surf3);
+      border-radius: 2px;
+      overflow: hidden;
+      position: relative;
+    }
+    .loading-bar-fill {
+      position: absolute; top: 0; left: 0; height: 100%;
+      background: linear-gradient(90deg, var(--acc-dim), var(--acc), var(--acc-dim));
+      background-size: 200% 100%;
+      border-radius: 2px;
+      animation: bar-slide 1.4s ease-in-out infinite;
+      width: 40%;
+    }
+    @keyframes bar-slide {
+      0%   { left: -40%; }
+      100% { left: 120%; }
+    }
+    .loading-sub { font-family: 'Share Tech Mono', monospace; font-size: 0.6rem; color: var(--text-lo); letter-spacing: 1px; animation: fade 1.8s ease-in-out infinite; }
+    @keyframes fade { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
     /* ── Error ───────────────────────────────── */
     .error-box { display: none; padding: 10px 14px; background: var(--fail-pale); border: 1px solid var(--fail-dim); border-radius: 4px; font-family: 'Share Tech Mono', monospace; font-size: 0.74rem; color: var(--fail); margin-top: 10px; letter-spacing: 0.5px; }
@@ -407,9 +428,96 @@
 
     @media print {
       body { background: white; padding: 0; }
-      .panel, header, footer, #uploadSection, .btn-bajo { display: none !important; }
-      #expedientePanel { display: block !important; }
+      #expNavBar, footer, .wrap { display: none !important; }
+      #expedienteOverlay { position: static !important; transform: none !important; opacity: 1 !important; background: white; }
+      #expScrollArea { padding: 0; }
+      #expPaperWrap { max-width: 100%; padding: 0; }
       .expediente-papel { box-shadow: none; }
+    }
+
+    /* ════ OVERLAY FULLSCREEN ════ */
+    #expedienteOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      opacity: 0;
+      transition: transform 0.4s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease;
+      pointer-events: none;
+    }
+    #expedienteOverlay.open {
+      transform: translateX(0);
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* Barra nav superior */
+    #expNavBar {
+      flex-shrink: 0;
+      background: var(--surf2);
+      border-bottom: 1px solid var(--bdr);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      z-index: 10;
+    }
+    #expNavTitle {
+      flex: 1;
+      font-family: 'Orbitron', monospace;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 4px;
+      color: var(--text-dim);
+      text-align: center;
+      text-transform: uppercase;
+    }
+    #expVolverBtn, #expPrintBtn {
+      background: transparent;
+      border: 1px solid var(--bdr-hi);
+      color: var(--text-dim);
+      font-family: 'Orbitron', monospace;
+      font-size: 0.58rem;
+      letter-spacing: 2px;
+      padding: 7px 14px;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: background 0.2s, color 0.2s;
+      white-space: nowrap;
+    }
+    #expVolverBtn:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+    #expVolverBtn span  { margin-right: 4px; }
+    #expPrintBtn { color: var(--acc-dim); border-color: rgba(255,215,0,0.2); }
+    #expPrintBtn:hover { background: var(--acc-pale); color: var(--acc); }
+
+    /* Área scrollable */
+    #expScrollArea {
+      flex: 1;
+      overflow-y: auto;
+      padding: 40px 20px 80px;
+      /* Scanlines sobre el fondo */
+      background: var(--bg);
+    }
+    #expScrollArea::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 3px,
+        rgba(255,255,255,0.012) 3px, rgba(255,255,255,0.012) 4px
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #expPaperWrap {
+      position: relative;
+      z-index: 1;
+      max-width: 640px;
+      margin: 0 auto;
     }
   </style>
 </head>
@@ -476,90 +584,17 @@
   <div class="panel" id="loadingPanel">
     <div class="panel-body">
       <div class="loading-inner">
-        <div class="spinner-ring"></div>
-        <p class="loading-text" id="loadingPhaseText">// LEYENDO ARCHIVO...</p>
-        <p style="font-family:'Share Tech Mono',monospace;font-size:0.58rem;color:var(--text-lo);letter-spacing:1px;margin-top:4px" id="loadingSubText"></p>
+        <div class="loading-label-row">
+          <span class="loading-text" id="loadingPhaseText">// REVISANDO...</span>
+          <span class="loading-pct" id="loadingSubText"></span>
+        </div>
+        <div class="loading-bar-track">
+          <div class="loading-bar-fill"></div>
+        </div>
+        <span class="loading-sub" id="loadingSubLabel">Procesando el documento</span>
       </div>
     </div>
   </div>
-
-  <!-- ════ EXPEDIENTE PAPEL AMARILLO ════ -->
-  <div id="expedientePanel">
-
-    <div class="expediente-papel" id="expPapel">
-
-      <!-- Perforaciones -->
-      <div class="perforaciones">
-        <div class="perf"></div>
-        <div class="perf"></div>
-        <div class="perf"></div>
-        <div class="perf"></div>
-        <div class="perf"></div>
-      </div>
-
-      <!-- Sello grande diagonal -->
-      <div class="sello-grande" id="selloGrande"></div>
-
-      <div class="exp-inner">
-
-        <!-- Encabezado -->
-        <div class="exp-top">
-          <div>
-            <div class="exp-organismo">
-              Agencia de Inteligencia Digital (ADI)<br>
-              Departamento de Verificación de Expedientes<br>
-              Programa Habilidades Digitales — Ceibal
-            </div>
-            <div class="exp-titulo-doc">Informe de Verificación de Formato</div>
-          </div>
-          <div class="exp-numero" id="expNumero"></div>
-        </div>
-
-        <!-- Datos del expediente -->
-        <div class="exp-datos" id="expDatos"></div>
-
-        <!-- Dictamen general -->
-        <div class="exp-dictamen" id="expDictamen"></div>
-
-        <hr class="exp-sep"/>
-
-        <!-- Lista de parámetros -->
-        <div class="exp-seccion-label">Verificación de parámetros técnicos</div>
-        <div class="param-list" id="paramList"></div>
-
-        <hr class="exp-sep"/>
-
-        <!-- Mensaje al estudiante -->
-        <div id="expMensajeEstudiante"></div>
-
-        <!-- Aviso IA -->
-        <div id="expAvisoIA"></div>
-
-        <hr class="exp-sep"/>
-
-        <!-- Cierre -->
-        <div class="exp-cierre">
-          <div class="exp-firma-bloque">
-            <div class="exp-firma-linea"></div>
-            <div class="exp-firma-label">Sistema verificador automático</div>
-          </div>
-          <div class="exp-firma-bloque">
-            <div class="exp-firma-linea"></div>
-            <div class="exp-firma-label">Fecha y hora de emisión</div>
-          </div>
-          <div class="exp-adi-logo">ADI</div>
-        </div>
-
-      </div><!-- /exp-inner -->
-    </div><!-- /expediente-papel -->
-
-    <!-- Botones bajo el expediente -->
-    <div style="display:flex;gap:10px;margin-top:14px">
-      <button class="btn btn-sec btn-bajo" onclick="resetForm()">↺ &nbsp; NUEVO ANÁLISIS</button>
-      <button class="btn btn-bajo" style="flex:0 0 auto;width:auto;padding:14px 22px" onclick="window.print()">🖨 IMPRIMIR</button>
-    </div>
-
-  </div><!-- /expedientePanel -->
 
 </div><!-- /wrap -->
 
@@ -572,6 +607,94 @@
     Programa Habilidades Digitales · Plan Ceibal
   </div>
 </footer>
+
+<!-- ════ PANTALLA EXPEDIENTE (overlay fullscreen) ════ -->
+<div id="expedienteOverlay">
+
+  <!-- Barra superior de navegación -->
+  <div id="expNavBar">
+    <button id="expVolverBtn" onclick="resetForm()">
+      <span>←</span> VOLVER
+    </button>
+    <span id="expNavTitle">EXPEDIENTE ADI</span>
+    <button id="expPrintBtn" onclick="window.print()">🖨 IMPRIMIR</button>
+  </div>
+
+  <!-- Contenido scrollable -->
+  <div id="expScrollArea">
+    <div id="expPaperWrap">
+
+      <div class="expediente-papel" id="expPapel">
+
+        <!-- Perforaciones -->
+        <div class="perforaciones">
+          <div class="perf"></div>
+          <div class="perf"></div>
+          <div class="perf"></div>
+          <div class="perf"></div>
+          <div class="perf"></div>
+        </div>
+
+        <!-- Sello grande diagonal -->
+        <div class="sello-grande" id="selloGrande"></div>
+
+        <div class="exp-inner">
+
+          <!-- Encabezado -->
+          <div class="exp-top">
+            <div>
+              <div class="exp-organismo">
+                Agencia de Inteligencia Digital (ADI)<br>
+                Departamento de Verificación de Expedientes<br>
+                Programa Habilidades Digitales — Ceibal
+              </div>
+              <div class="exp-titulo-doc">Informe de Verificación de Formato</div>
+            </div>
+            <div class="exp-numero" id="expNumero"></div>
+          </div>
+
+          <!-- Datos del expediente -->
+          <div class="exp-datos" id="expDatos"></div>
+
+          <!-- Dictamen general -->
+          <div class="exp-dictamen" id="expDictamen"></div>
+
+          <hr class="exp-sep"/>
+
+          <!-- Lista de parámetros -->
+          <div class="exp-seccion-label">Verificación de parámetros técnicos</div>
+          <div class="param-list" id="paramList"></div>
+
+          <hr class="exp-sep"/>
+
+          <!-- Mensaje al estudiante -->
+          <div id="expMensajeEstudiante"></div>
+
+          <!-- Aviso IA -->
+          <div id="expAvisoIA"></div>
+
+          <hr class="exp-sep"/>
+
+          <!-- Cierre -->
+          <div class="exp-cierre">
+            <div class="exp-firma-bloque">
+              <div class="exp-firma-linea"></div>
+              <div class="exp-firma-label">Sistema verificador automático</div>
+            </div>
+            <div class="exp-firma-bloque">
+              <div class="exp-firma-linea"></div>
+              <div class="exp-firma-label">Fecha y hora de emisión</div>
+            </div>
+            <div class="exp-adi-logo">ADI</div>
+          </div>
+
+        </div><!-- /exp-inner -->
+      </div><!-- /expediente-papel -->
+
+    </div><!-- /expPaperWrap -->
+  </div><!-- /expScrollArea -->
+
+</div><!-- /expedienteOverlay -->
 
 <script>
 const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
@@ -660,16 +783,16 @@ async function analyzeDocument(){
   hideError();
   analyzeBtn.disabled=true;
   document.getElementById('loadingPanel').style.display='block';
-  document.getElementById('expedientePanel').style.display='none';
+  document.getElementById('expedienteOverlay').classList.remove('open');
   document.getElementById('uploadSection').style.opacity='0.4';
   await new Promise(r=>setTimeout(r,40));
 
   try{
-    setLoadingPhase('// LEYENDO ARCHIVO...','Descomprimiendo el documento Word');
+    setLoadingPhase('// REVISANDO...','Descomprimiendo el documento Word');
     await new Promise(r=>setTimeout(r,350));
     const zip=await JSZip.loadAsync(await selectedFile.arrayBuffer());
 
-    setLoadingPhase('// ANALIZANDO PARÁMETROS...','Inspeccionando estructura XML');
+    setLoadingPhase('// REVISANDO...','Leyendo parámetros de formato');
     await new Promise(r=>setTimeout(r,300));
     const docXmlStr =await zip.file('word/document.xml').async('string');
     const stylesFile=zip.file('word/styles.xml');
@@ -835,10 +958,10 @@ function typewrite(el, htmlStr, speed=16){
 }
 
 function setLoadingPhase(text, sub=''){
-  const el=document.getElementById('loadingPhaseText');
-  const sub_el=document.getElementById('loadingSubText');
-  if(el) el.textContent=text;
-  if(sub_el) sub_el.textContent=sub;
+  const el    = document.getElementById('loadingPhaseText');
+  const subEl = document.getElementById('loadingSubLabel');
+  if(el)    el.textContent  = text;
+  if(subEl) subEl.textContent = sub;
 }
 
 // ── Renderizar expediente ──────────────────────────────────────────────────
@@ -851,7 +974,7 @@ async function renderExpediente(results){
   const hora   = now.toLocaleTimeString('es-UY',{hour:'2-digit',minute:'2-digit'});
   docCounter++;
 
-  setLoadingPhase('// GENERANDO EXPEDIENTE...','Preparando estructura del documento');
+  setLoadingPhase('// REVISANDO...','Preparando el expediente');
   await new Promise(r=>setTimeout(r,400));
 
   // ── Estructura estática (aparece de golpe) ─────────────────────────────
@@ -910,13 +1033,13 @@ async function renderExpediente(results){
   document.getElementById('expMensajeEstudiante').innerHTML='';
   document.getElementById('expAvisoIA').innerHTML='';
 
-  // ── Mostrar el expediente ──────────────────────────────────────────────
+  // ── Mostrar el expediente como pantalla nueva ─────────────────────────
   document.getElementById('loadingPanel').style.display='none';
   document.getElementById('uploadSection').style.opacity='1';
-  document.getElementById('expedientePanel').style.display='block';
-  await new Promise(r=>setTimeout(r,80));
-  document.getElementById('expedientePanel').scrollIntoView({behavior:'smooth',block:'start'});
-  await new Promise(r=>setTimeout(r,500));
+  const overlay = document.getElementById('expedienteOverlay');
+  overlay.classList.add('open');
+  document.getElementById('expScrollArea').scrollTop = 0;
+  await new Promise(r=>setTimeout(r,420)); // esperar que termine la transición
 
   // ── 1. Typewriter: dictamen ────────────────────────────────────────────
   let dictamenHtml='';
@@ -985,7 +1108,7 @@ function resetForm(){
   fileInput.value='';
   fileNameEl.textContent='';
   analyzeBtn.disabled=true;
-  document.getElementById('expedientePanel').style.display='none';
+  document.getElementById('expedienteOverlay').classList.remove('open');
   document.getElementById('uploadSection').style.opacity='1';
   hideError();
   window.scrollTo({top:0,behavior:'smooth'});
