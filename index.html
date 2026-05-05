@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VERIFICADOR DE FORMATO — ADI</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Exo+2:wght@400;600;700&family=Special+Elite&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ══ PALETA TERMINAL ══ */
+    :root {
+      --bg:       #0d1117;
+      --surf:     #161b22;
+      --surf2:    #21262d;
+      --surf3:    #2d333b;
+      --bdr:      rgba(255,255,255,0.09);
+      --bdr-hi:   rgba(255,255,255,0.18);
+      --text:     #e6edf3;
+      --text-dim: #7d8590;
+      --text-lo:  #484f58;
+      --acc:      #ffd700;
+      --acc-dim:  #b89b00;
+      --acc-pale: rgba(255,215,0,0.08);
+      --fail:     #f85149;
+      --fail-dim: #aa2f2a;
+      --fail-pale:rgba(248,81,73,0.08);
+    }
+
+    /* ══ PALETA EXPEDIENTE ══ */
+    :root {
+      --paper:      #f5e9a9;
+      --paper2:     #ede08a;
+      --paper3:     #e0d070;
+      --paper-dark: #d4c35a;
+      --ink:        #1a130a;
+      --ink-dim:    #3d3020;
+      --ink-lo:     #7a6645;
+      --sello-ok:   #8b0000;
+      --sello-obs:  #1a3a6b;
+      --sello-warn: #5c3a00;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Exo 2', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 20px 80px;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 3px,
+        rgba(255,255,255,0.012) 3px, rgba(255,255,255,0.012) 4px
+      );
+      pointer-events: none; z-index: 0;
+    }
+
+    .wrap { position: relative; z-index: 1; width: 100%; max-width: 640px; display: flex; flex-direction: column; gap: 16px; }
+
+    /* ── Header terminal ────────────────────── */
+    header { text-align: center; margin-bottom: 8px; }
+    .agency-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 18px; }
+    .agency-line { flex: 1; height: 1px; background: var(--bdr); max-width: 80px; }
+    .agency-tag { font-family: 'Orbitron', monospace; font-size: 0.6rem; letter-spacing: 4px; color: var(--text-dim); text-transform: uppercase; }
+    h1 { font-family: 'Orbitron', monospace; font-size: clamp(1.2rem,4.5vw,1.8rem); font-weight: 900; color: var(--acc); letter-spacing: 0.06em; line-height: 1.2; text-shadow: 0 0 24px rgba(255,215,0,0.25); }
+    .subtitle { font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; margin-top: 8px; text-transform: uppercase; font-family: 'Share Tech Mono', monospace; }
+
+    /* ── Panel terminal ─────────────────────── */
+    .panel { background: var(--surf); border: 1px solid var(--bdr); border-radius: 6px; overflow: hidden; }
+    .panel-header { background: var(--surf2); border-bottom: 1px solid var(--bdr); padding: 10px 18px; display: flex; align-items: center; gap: 10px; }
+    .ph-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--acc); animation: blink 2.8s ease-in-out infinite; flex-shrink: 0; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+    .ph-title { font-family: 'Orbitron', monospace; font-size: 0.58rem; font-weight: 700; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; }
+    .ph-right { margin-left: auto; font-family: 'Share Tech Mono', monospace; font-size: 0.6rem; color: var(--text-lo); letter-spacing: 1px; }
+    .panel-body { padding: 18px; }
+
+    /* ── Criteria list ──────────────────────── */
+    .criteria-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .criteria-list li { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; background: var(--surf2); border: 1px solid var(--bdr); border-radius: 4px; font-size: 0.82rem; color: var(--text); font-family: 'Share Tech Mono', monospace; }
+    .criteria-list li .ci { color: var(--acc); font-weight: 700; flex-shrink: 0; min-width: 20px; }
+    .criteria-list li strong { color: var(--acc); }
+
+    /* ── Dropzone ───────────────────────────── */
+    .dropzone { border: 1px dashed var(--bdr-hi); border-radius: 4px; padding: 36px 20px; text-align: center; cursor: pointer; position: relative; transition: border-color 0.2s, background 0.2s; }
+    .dropzone:hover, .dropzone.drag-over { border-color: var(--acc-dim); background: var(--acc-pale); }
+    .dropzone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .drop-icon { font-size: 2rem; margin-bottom: 10px; display: block; }
+    .drop-label { font-family: 'Share Tech Mono', monospace; font-size: 0.78rem; color: var(--text-dim); letter-spacing: 1px; }
+    .drop-sub { font-size: 0.68rem; color: var(--text-lo); margin-top: 5px; letter-spacing: 1px; font-family: 'Share Tech Mono', monospace; }
+    .file-chosen { margin-top: 10px; font-size: 0.78rem; color: var(--acc); font-family: 'Share Tech Mono', monospace; letter-spacing: 0.5px; }
+
+    /* ── Button ─────────────────────────────── */
+    .btn { width: 100%; padding: 14px; background: transparent; color: var(--acc); border: 1px solid var(--acc-dim); border-radius: 4px; font-family: 'Orbitron', monospace; font-size: 0.7rem; font-weight: 700; letter-spacing: 3px; cursor: pointer; text-transform: uppercase; transition: background 0.2s, box-shadow 0.2s; margin-top: 14px; }
+    .btn:hover:not(:disabled) { background: var(--acc-pale); box-shadow: 0 0 18px rgba(255,215,0,0.15); }
+    .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .btn-sec { color: var(--text-dim); border-color: var(--bdr-hi); }
+    .btn-sec:hover:not(:disabled) { background: rgba(255,255,255,0.04); color: var(--text); box-shadow: none; }
+
+    /* ── Loading ─────────────────────────────── */
+    #loadingPanel { display: none; }
+    .loading-inner { display: flex; flex-direction: column; align-items: center; padding: 8px 0; gap: 14px; }
+    .spinner-ring { width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--bdr-hi); border-top-color: var(--acc); animation: spin 0.9s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-family: 'Share Tech Mono', monospace; font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; animation: fade 1.6s ease-in-out infinite; }
+    @keyframes fade { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+    /* ── Error ───────────────────────────────── */
+    .error-box { display: none; padding: 10px 14px; background: var(--fail-pale); border: 1px solid var(--fail-dim); border-radius: 4px; font-family: 'Share Tech Mono', monospace; font-size: 0.74rem; color: var(--fail); margin-top: 10px; letter-spacing: 0.5px; }
+    .error-box.show { display: block; }
+
+    /* ════════════════════════════════════════════
+       EXPEDIENTE — PAPEL AMARILLO
+    ════════════════════════════════════════════ */
+    #expedientePanel { display: none; margin-top: 8px; }
+
+    .expediente-papel {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: 'Special Elite', serif;
+      border: 1px solid var(--paper-dark);
+      border-radius: 2px;
+      box-shadow:
+        4px 4px 0 var(--paper3),
+        8px 8px 0 var(--paper2),
+        0 12px 40px rgba(0,0,0,0.5);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Textura de papel */
+    .expediente-papel::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          transparent, transparent 27px,
+          rgba(180,160,80,0.18) 27px, rgba(180,160,80,0.18) 28px
+        );
+      pointer-events: none;
+    }
+
+    /* Margen izquierdo */
+    .expediente-papel::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 52px; bottom: 0;
+      width: 1px;
+      background: rgba(200,100,100,0.35);
+      pointer-events: none;
+    }
+
+    .exp-inner { padding: 32px 32px 32px 68px; position: relative; z-index: 1; }
+
+    /* Perforaciones */
+    .perforaciones {
+      position: absolute;
+      left: 18px; top: 0; bottom: 0;
+      width: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      align-items: center;
+      padding: 24px 0;
+      z-index: 2;
+    }
+    .perf {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: 1px solid rgba(0,0,0,0.15);
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.4);
+    }
+
+    /* ── Encabezado del expediente ──────────── */
+    .exp-top {
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .exp-organismo {
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      line-height: 1.8;
+    }
+    .exp-titulo-doc {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    .exp-numero {
+      text-align: right;
+      font-size: 0.7rem;
+      color: var(--ink-dim);
+      line-height: 1.9;
+    }
+
+    /* ── Sello diagonal grande ──────────────── */
+    .sello-grande {
+      position: absolute;
+      top: 38px;
+      right: 28px;
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      border: 4px double;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      transform: rotate(-15deg);
+      font-family: 'Orbitron', monospace;
+      opacity: 0.82;
+      z-index: 3;
+      pointer-events: none;
+    }
+    .sello-grande.aprobado  { border-color: var(--sello-ok);   color: var(--sello-ok); }
+    .sello-grande.observado { border-color: var(--sello-obs);  color: var(--sello-obs); }
+    .sello-grande.parcial   { border-color: var(--sello-warn); color: var(--sello-warn); }
+    .sello-grande .sg-top   { font-size: 0.48rem; letter-spacing: 3px; text-transform: uppercase; }
+    .sello-grande .sg-mid   { font-size: 1rem; font-weight: 900; line-height: 1; margin: 4px 0; }
+    .sello-grande .sg-bot   { font-size: 0.42rem; letter-spacing: 2px; }
+
+    /* ── Datos del expediente ───────────────── */
+    .exp-datos {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 24px;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px dashed var(--ink-lo);
+      font-size: 0.72rem;
+    }
+    .exp-dato { display: flex; flex-direction: column; gap: 2px; }
+    .exp-dato-label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 2px; color: var(--ink-lo); }
+    .exp-dato-val { font-family: 'Courier Prime', monospace; color: var(--ink); font-weight: 700; font-size: 0.78rem; }
+
+    /* ── Dictamen ───────────────────────────── */
+    .exp-dictamen {
+      margin-bottom: 18px;
+      padding: 14px 16px;
+      background: rgba(180,160,80,0.18);
+      border: 1px solid var(--paper3);
+      border-left: 3px solid var(--ink-dim);
+    }
+    .exp-dictamen-label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 2px; color: var(--ink-lo); margin-bottom: 6px; }
+    .exp-dictamen-text { font-family: 'Courier Prime', monospace; font-size: 0.82rem; color: var(--ink); line-height: 1.7; }
+
+    /* ── Separador ──────────────────────────── */
+    .exp-sep { border: none; border-top: 1px dashed var(--ink-lo); margin: 16px 0; }
+    .exp-seccion-label {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--ink-lo);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .exp-seccion-label::after { content: ''; flex: 1; height: 1px; background: var(--ink-lo); opacity: 0.4; }
+
+    /* ── Items de parámetros ────────────────── */
+    .param-list { display: flex; flex-direction: column; gap: 14px; }
+
+    .param-item {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding-bottom: 12px;
+      border-bottom: 1px dotted var(--paper3);
+    }
+    .param-item:last-child { border-bottom: none; padding-bottom: 0; }
+
+    .param-sello {
+      flex-shrink: 0;
+      width: 52px; height: 52px;
+      border-radius: 4px;
+      border: 2px solid;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center;
+      font-family: 'Orbitron', monospace;
+      transform: rotate(-2deg);
+    }
+    .param-sello.ok   { border-color: var(--sello-ok);  color: var(--sello-ok); }
+    .param-sello.obs  { border-color: var(--sello-obs); color: var(--sello-obs); }
+    .param-sello .ps-num  { font-size: 0.5rem; letter-spacing: 1px; opacity: 0.7; }
+    .param-sello .ps-icon { font-size: 1.1rem; line-height: 1; }
+    .param-sello .ps-txt  { font-size: 0.38rem; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 2px; }
+
+    .param-content { flex: 1; min-width: 0; }
+    .param-nombre {
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--ink);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 5px;
+    }
+    .param-obs {
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.74rem;
+      color: var(--ink-dim);
+      line-height: 1.65;
+    }
+
+    /* ── Firma / cierre ─────────────────────── */
+    .exp-cierre {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 2px solid var(--ink);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .exp-firma-bloque { text-align: center; }
+    .exp-firma-linea { width: 140px; height: 1px; background: var(--ink); margin: 0 auto 4px; }
+    .exp-firma-label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 2px; color: var(--ink-lo); }
+    .exp-adi-logo {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.4rem;
+      font-weight: 900;
+      color: var(--ink);
+      letter-spacing: 4px;
+      opacity: 0.15;
+      user-select: none;
+    }
+
+    /* Botón bajo el expediente */
+    .btn-bajo { max-width: 640px; width: 100%; }
+
+    /* ── Footer ──────────────────────────────── */
+    footer { margin-top: 40px; font-family: 'Share Tech Mono', monospace; font-size: 0.6rem; color: var(--text-lo); letter-spacing: 2px; text-align: center; text-transform: uppercase; position: relative; z-index: 1; }
+
+    /* ── Mensaje al estudiante ──────────────── */
+    .exp-mensaje {
+      padding: 14px 16px;
+      border-radius: 2px;
+      margin-bottom: 0;
+      font-family: 'Special Elite', serif;
+      font-size: 0.88rem;
+      line-height: 1.75;
+      color: var(--ink);
+    }
+    .exp-mensaje.ok   { background: rgba(100,140,60,0.12); border: 1px solid rgba(60,100,30,0.3); border-left: 3px solid #3a7a1e; }
+    .exp-mensaje.fix  { background: rgba(160,100,30,0.1);  border: 1px solid rgba(120,80,20,0.3); border-left: 3px solid #8b4e00; }
+    .exp-mensaje-label { font-family: 'Courier Prime', monospace; font-size: 0.56rem; text-transform: uppercase; letter-spacing: 2.5px; color: var(--ink-lo); margin-bottom: 6px; }
+    .exp-mensaje strong { color: var(--ink); }
+
+    /* ── Aviso IA ───────────────────────────── */
+    .exp-aviso-ia {
+      margin-top: 14px;
+      padding: 10px 14px;
+      background: rgba(0,0,0,0.06);
+      border: 1px dashed var(--ink-lo);
+      border-radius: 2px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .exp-aviso-ia .aviso-icon { font-size: 0.9rem; flex-shrink: 0; margin-top: 1px; }
+    .exp-aviso-ia .aviso-txt {
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.68rem;
+      color: var(--ink-lo);
+      line-height: 1.6;
+      letter-spacing: 0.2px;
+    }
+
+    /* ── Cursor typewriter ──────────────────── */
+    .tw-cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1em;
+      background: var(--ink);
+      margin-left: 1px;
+      vertical-align: text-bottom;
+      animation: tw-blink 0.7s step-end infinite;
+      opacity: 0.7;
+    }
+    @keyframes tw-blink { 0%,100%{opacity:0.7} 50%{opacity:0} }
+
+    /* ── Param item oculto hasta reveal ─────── */
+    .param-item { opacity: 0; transition: opacity 0.3s ease; }
+    .param-item.visible { opacity: 1; }
+
+    @media print {
+      body { background: white; padding: 0; }
+      .panel, header, footer, #uploadSection, .btn-bajo { display: none !important; }
+      #expedientePanel { display: block !important; }
+      .expediente-papel { box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- Header -->
+  <header>
+    <div class="agency-row">
+      <div class="agency-line"></div>
+      <span class="agency-tag">Verificador de formato</span>
+      <div class="agency-line"></div>
+    </div>
+    <h1>ADI</h1>
+    <p class="subtitle">Agencia de Inteligencia Digital</p>
+  </header>
+
+  <!-- Upload section -->
+  <div id="uploadSection">
+
+    <!-- Parámetros -->
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-header">
+        <div class="ph-dot"></div>
+        <span class="ph-title">Parámetros de control</span>
+        <span class="ph-right">REF-FMT-001</span>
+      </div>
+      <div class="panel-body">
+        <ul class="criteria-list">
+          <li><span class="ci">01</span> Título con tamaño <strong>14pt</strong> y efecto <strong>negrita</strong></li>
+          <li><span class="ci">02</span> Cuerpo del texto en tamaño <strong>12pt</strong></li>
+          <li><span class="ci">03</span> Uso de <strong>viñetas</strong> en al menos un listado</li>
+          <li><span class="ci">04</span> Texto resaltado en <strong>negrita</strong> dentro del cuerpo</li>
+          <li><span class="ci">05</span> Al menos un <strong>hipervínculo</strong> insertado</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Carga -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="ph-dot"></div>
+        <span class="ph-title">Cargar expediente</span>
+      </div>
+      <div class="panel-body">
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="fileInput" accept=".docx"/>
+          <span class="drop-icon">📄</span>
+          <p class="drop-label">// SOLTAR ARCHIVO AQUÍ O HACER CLIC</p>
+          <p class="drop-sub">FORMATO: .docx · MÁX 20 MB</p>
+          <p class="file-chosen" id="fileName"></p>
+        </div>
+        <div class="error-box" id="errorBox"></div>
+        <button class="btn" id="analyzeBtn" disabled onclick="analyzeDocument()">
+          ⬡ &nbsp; INICIAR ANÁLISIS &nbsp; ⬡
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /uploadSection -->
+
+  <!-- Loading -->
+  <div class="panel" id="loadingPanel">
+    <div class="panel-body">
+      <div class="loading-inner">
+        <div class="spinner-ring"></div>
+        <p class="loading-text" id="loadingPhaseText">// LEYENDO ARCHIVO...</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:0.58rem;color:var(--text-lo);letter-spacing:1px;margin-top:4px" id="loadingSubText"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ EXPEDIENTE PAPEL AMARILLO ════ -->
+  <div id="expedientePanel">
+
+    <div class="expediente-papel" id="expPapel">
+
+      <!-- Perforaciones -->
+      <div class="perforaciones">
+        <div class="perf"></div>
+        <div class="perf"></div>
+        <div class="perf"></div>
+        <div class="perf"></div>
+        <div class="perf"></div>
+      </div>
+
+      <!-- Sello grande diagonal -->
+      <div class="sello-grande" id="selloGrande"></div>
+
+      <div class="exp-inner">
+
+        <!-- Encabezado -->
+        <div class="exp-top">
+          <div>
+            <div class="exp-organismo">
+              Agencia de Inteligencia Digital (ADI)<br>
+              Departamento de Verificación de Expedientes<br>
+              Programa Habilidades Digitales — Ceibal
+            </div>
+            <div class="exp-titulo-doc">Informe de Verificación de Formato</div>
+          </div>
+          <div class="exp-numero" id="expNumero"></div>
+        </div>
+
+        <!-- Datos del expediente -->
+        <div class="exp-datos" id="expDatos"></div>
+
+        <!-- Dictamen general -->
+        <div class="exp-dictamen" id="expDictamen"></div>
+
+        <hr class="exp-sep"/>
+
+        <!-- Lista de parámetros -->
+        <div class="exp-seccion-label">Verificación de parámetros técnicos</div>
+        <div class="param-list" id="paramList"></div>
+
+        <hr class="exp-sep"/>
+
+        <!-- Mensaje al estudiante -->
+        <div id="expMensajeEstudiante"></div>
+
+        <!-- Aviso IA -->
+        <div id="expAvisoIA"></div>
+
+        <hr class="exp-sep"/>
+
+        <!-- Cierre -->
+        <div class="exp-cierre">
+          <div class="exp-firma-bloque">
+            <div class="exp-firma-linea"></div>
+            <div class="exp-firma-label">Sistema verificador automático</div>
+          </div>
+          <div class="exp-firma-bloque">
+            <div class="exp-firma-linea"></div>
+            <div class="exp-firma-label">Fecha y hora de emisión</div>
+          </div>
+          <div class="exp-adi-logo">ADI</div>
+        </div>
+
+      </div><!-- /exp-inner -->
+    </div><!-- /expediente-papel -->
+
+    <!-- Botones bajo el expediente -->
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn btn-sec btn-bajo" onclick="resetForm()">↺ &nbsp; NUEVO ANÁLISIS</button>
+      <button class="btn btn-bajo" style="flex:0 0 auto;width:auto;padding:14px 22px" onclick="window.print()">🖨 IMPRIMIR</button>
+    </div>
+
+  </div><!-- /expedientePanel -->
+
+</div><!-- /wrap -->
+
+<footer>
+  <div style="margin-bottom:6px">ADI · Análisis 100% local · Ningún dato se transmite a servidores externos</div>
+  <div style="margin-bottom:10px; color:var(--text-lo); font-size:0.55rem; max-width:480px; margin-inline:auto; line-height:1.7; letter-spacing:1px">
+    ⚠ Este verificador realiza un análisis automático del archivo. Los resultados son orientativos — el sistema puede cometer errores. Ante dudas, revisá el documento manualmente.
+  </div>
+  <div style="color:var(--text-lo); font-size:0.52rem; letter-spacing:1.5px; opacity:0.6">
+    Programa Habilidades Digitales · Plan Ceibal
+  </div>
+</footer>
+
+<script>
+const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+
+// ── UI wiring ──────────────────────────────────────────────────────────────
+const fileInput  = document.getElementById('fileInput');
+const fileNameEl = document.getElementById('fileName');
+const analyzeBtn = document.getElementById('analyzeBtn');
+const dropzone   = document.getElementById('dropzone');
+const errorBox   = document.getElementById('errorBox');
+let selectedFile = null;
+let docCounter   = Math.floor(1000 + Math.random() * 8999);
+
+dropzone.addEventListener('dragover',  e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', ()  => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+
+function handleFile(f) {
+  hideError();
+  if (!f.name.toLowerCase().endsWith('.docx')) { showError('// ERROR 001 · Solo se aceptan archivos .docx (Word).'); return; }
+  if (f.size > 20*1024*1024) { showError('// ERROR 002 · El archivo supera los 20 MB.'); return; }
+  selectedFile = f;
+  fileNameEl.textContent = '> EXPEDIENTE CARGADO: ' + f.name;
+  analyzeBtn.disabled = false;
+}
+const showError = msg => { errorBox.textContent = msg; errorBox.classList.add('show'); };
+const hideError = ()  => errorBox.classList.remove('show');
+
+// ── XML helpers ────────────────────────────────────────────────────────────
+const xmlParser = new DOMParser();
+const parseXml  = s  => xmlParser.parseFromString(s,'text/xml');
+const wEls  = (el,t) => Array.from(el.getElementsByTagNameNS(W,t));
+const wEl   = (el,t) => el.getElementsByTagNameNS(W,t)[0] || null;
+const wVal  = el     => el ? (el.getAttributeNS(W,'val')||el.getAttribute('w:val')||'') : '';
+const wAttr = (el,a) => el ? (el.getAttributeNS(W,a)||el.getAttribute('w:'+a)||'') : '';
+const getText       = p => wEls(p,'t').map(t=>t.textContent).join('').trim();
+const getPStyleName = p => { const ps=wEl(wEl(p,'pPr'),'pStyle'); return ps?wVal(ps):''; };
+
+function isBoldRPr(rPr){
+  if(!rPr)return false;
+  const bs=wEls(rPr,'b');
+  if(!bs.length)return false;
+  const v=wVal(bs[0]);
+  return v!=='0'&&v!=='false';
+}
+function getSzHalfPt(rPr){
+  if(!rPr)return null;
+  const sz=wEl(rPr,'sz');
+  if(!sz)return null;
+  const v=parseInt(wVal(sz));
+  return isNaN(v)?null:v;
+}
+function hasNumPr(p){
+  const pPr=wEl(p,'pPr');
+  if(!pPr)return false;
+  const numPr=wEl(pPr,'numPr');
+  if(!numPr)return false;
+  const numId=wEl(numPr,'numId');
+  return numId?parseInt(wVal(numId))>0:false;
+}
+const HEADING_KEYS=['heading','ttulo','titulo','title','encabezado'];
+function isHeadingStyle(name){
+  const s=name.toLowerCase();
+  return HEADING_KEYS.some(k=>s.includes(k))||/^(h[1-6]|1|2|3)$/.test(s);
+}
+function getDefaultBodySz(sx){
+  if(!sx)return null;
+  const dd=wEl(sx,'docDefaults');
+  if(dd){const sz=getSzHalfPt(wEl(wEl(dd,'rPrDefault'),'rPr'));if(sz)return sz;}
+  for(const s of wEls(sx,'style')){
+    const id=wAttr(s,'styleId').toLowerCase();
+    if(id==='normal'||id==='a'||(wAttr(s,'default')==='1'&&wAttr(s,'type')==='paragraph')){
+      const sz=getSzHalfPt(wEl(s,'rPr'));if(sz)return sz;
+    }
+  }
+  return null;
+}
+
+// ── Análisis ───────────────────────────────────────────────────────────────
+async function analyzeDocument(){
+  if(!selectedFile)return;
+  hideError();
+  analyzeBtn.disabled=true;
+  document.getElementById('loadingPanel').style.display='block';
+  document.getElementById('expedientePanel').style.display='none';
+  document.getElementById('uploadSection').style.opacity='0.4';
+  await new Promise(r=>setTimeout(r,40));
+
+  try{
+    setLoadingPhase('// LEYENDO ARCHIVO...','Descomprimiendo el documento Word');
+    await new Promise(r=>setTimeout(r,350));
+    const zip=await JSZip.loadAsync(await selectedFile.arrayBuffer());
+
+    setLoadingPhase('// ANALIZANDO PARÁMETROS...','Inspeccionando estructura XML');
+    await new Promise(r=>setTimeout(r,300));
+    const docXmlStr =await zip.file('word/document.xml').async('string');
+    const stylesFile=zip.file('word/styles.xml');
+    const relsFile  =zip.file('word/_rels/document.xml.rels');
+    const docXml  =parseXml(docXmlStr);
+    const stylesXml=stylesFile?parseXml(await stylesFile.async('string')):null;
+    const relsXml  =relsFile  ?parseXml(await relsFile.async('string'))  :null;
+    const paras=wEls(docXml,'p');
+    const results=[];
+
+    // 01 · Título 14pt + negrita
+    {
+      let found=false,detail='';
+      const nonEmpty=paras.filter(p=>getText(p).length>0).slice(0,7);
+      for(const p of nonEmpty){
+        const style=getPStyleName(p);
+        if(style&&isHeadingStyle(style)){
+          found=true;
+          detail=`El expediente aplica el estilo de encabezado "${getPStyleName(p)}", que incluye 14pt y negrita de forma estructural. Parámetro conforme.`;
+          break;
+        }
+        for(const r of wEls(p,'r')){
+          const rPr=wEl(r,'rPr');
+          if(isBoldRPr(rPr)){
+            const sz=getSzHalfPt(rPr);
+            if(sz!==null&&sz>=26){
+              found=true;
+              detail=`Se verifica en el primer párrafo significativo del documento la presencia de negrita activa y fuente de ${sz/2}pt, ajustado al parámetro de título. Conforme.`;
+              break;
+            }
+          }
+        }
+        if(found)break;
+      }
+      if(!found)
+        detail='No se registra en la sección inicial del expediente un título formateado con negrita y fuente 14pt. Se solicita aplicar el estilo "Título 1" o configurar manualmente el encabezado principal.';
+      results.push({id:'01',nombre:'Título 14pt y negrita',cumple:found,obs:detail});
+    }
+
+    // 02 · Cuerpo 12pt
+    {
+      let found=false,detail='';
+      const defaultSz=getDefaultBodySz(stylesXml);
+      const bodyParas=paras.filter(p=>!isHeadingStyle(getPStyleName(p))&&getText(p).length>3).slice(0,30);
+      let cnt12=0,cntOther=0,cntNone=0;
+      for(const p of bodyParas){
+        let p12=false,pOther=false,pNone=false;
+        for(const r of wEls(p,'r')){
+          const sz=getSzHalfPt(wEl(r,'rPr'));
+          if(sz===null)pNone=true;else if(sz===24)p12=true;else pOther=true;
+        }
+        if(p12)cnt12++;else if(pNone)cntNone++;else cntOther++;
+      }
+      if(cnt12>0){
+        found=true;
+        detail=`Se constatan ${cnt12} párrafo(s) del cuerpo con declaración explícita de fuente 12pt, conforme al parámetro de texto ordinario.`;
+      }else if(cntNone>0&&cntOther===0){
+        if(defaultSz===null||defaultSz===24){
+          found=true;
+          detail='El cuerpo del expediente hereda el tamaño predeterminado del documento, equivalente a 12pt. Parámetro conforme por herencia de estilo.';
+        }else{
+          detail=`El tamaño predeterminado del documento es ${defaultSz/2}pt. No cumple con el parámetro de 12pt para el cuerpo. Se solicita ajuste en los párrafos de texto ordinario.`;
+        }
+      }else if(cntOther>0){
+        detail='Se detectan variaciones de tamaño de fuente en el cuerpo del expediente que no corresponden al parámetro establecido de 12pt. Se solicita revisión y estandarización del texto.';
+      }else{
+        found=defaultSz===null||defaultSz===24;
+        detail=found
+          ?'El tamaño predeterminado del documento es compatible con 12pt. Parámetro conforme.'
+          :'No se puede verificar el tamaño 12pt en el cuerpo del expediente con los datos disponibles.';
+      }
+      results.push({id:'02',nombre:'Texto cuerpo 12pt',cumple:found,obs:detail});
+    }
+
+    // 03 · Viñetas
+    {
+      const count=paras.filter(hasNumPr).length;
+      const found=count>0;
+      results.push({
+        id:'03',nombre:'Uso de viñetas',cumple:found,
+        obs:found
+          ?`El expediente incorpora ${count} ítem(s) con formato de lista estructurada (viñetas o numeración). Parámetro conforme.`
+          :'El expediente no registra bloques de contenido con formato de lista. Se solicita identificar contenido enumerable y aplicar viñetas o numeración desde el procesador de texto.'
+      });
+    }
+
+    // 04 · Negrita en cuerpo
+    {
+      let found=false,cnt=0;
+      for(const p of paras){
+        if(isHeadingStyle(getPStyleName(p))||getText(p).length===0)continue;
+        for(const r of wEls(p,'r')){
+          if(isBoldRPr(wEl(r,'rPr'))&&wEls(r,'t').some(t=>t.textContent.trim())){
+            found=true;cnt++;break;
+          }
+        }
+      }
+      results.push({
+        id:'04',nombre:'Negrita en cuerpo',cumple:found,
+        obs:found
+          ?`Se registra el uso de negrita como recurso de énfasis tipográfico en ${cnt} párrafo(s) del cuerpo del expediente, excluidos los encabezados. Parámetro conforme.`
+          :'El cuerpo del expediente no registra texto resaltado en negrita fuera de los encabezados. Se solicita identificar términos o fragmentos de relevancia y aplicar énfasis tipográfico.'
+      });
+    }
+
+    // 05 · Hipervínculo
+    {
+      const inlineLinks=wEls(docXml,'hyperlink').length;
+      let relLinks=0;
+      if(relsXml){
+        relLinks=Array.from(relsXml.getElementsByTagName('Relationship'))
+          .filter(r=>(r.getAttribute('Type')||'').includes('hyperlink')).length;
+      }
+      const found=inlineLinks>0||relLinks>0;
+      const count=Math.max(inlineLinks,relLinks);
+      results.push({
+        id:'05',nombre:'Hipervínculo insertado',cumple:found,
+        obs:found
+          ?`El expediente contiene ${count} hipervínculo(s) debidamente insertado(s) en el cuerpo del documento. Parámetro conforme.`
+          :'No se detectan hipervínculos en el expediente. Se solicita insertar al menos un enlace a fuente externa mediante Insertar → Hipervínculo en el procesador de texto.'
+      });
+    }
+
+    renderExpediente(results);
+
+  }catch(err){
+    document.getElementById('loadingPanel').style.display='none';
+    document.getElementById('uploadSection').style.opacity='1';
+    analyzeBtn.disabled=false;
+    console.error(err);
+    showError('// ERROR 500 · No se pudo procesar el expediente. Verificá que sea un .docx válido. ('+err.message+')');
+  }
+}
+
+// ── Typewriter helper ──────────────────────────────────────────────────────
+function typewrite(el, htmlStr, speed=16){
+  return new Promise(resolve=>{
+    const tmp=document.createElement('div');
+    tmp.innerHTML=htmlStr;
+    const plain=tmp.textContent;
+    el.textContent='';
+    const cur=document.createElement('span');
+    cur.className='tw-cursor';
+    el.appendChild(cur);
+    let i=0;
+    function tick(){
+      if(i<plain.length){
+        // burst a few chars at once for longer texts to keep it snappy
+        const burst = plain.length > 120 ? 3 : 1;
+        for(let b=0;b<burst&&i<plain.length;b++){
+          el.insertBefore(document.createTextNode(plain[i]),cur);
+          i++;
+        }
+        setTimeout(tick, speed);
+      } else {
+        cur.remove();
+        el.innerHTML=htmlStr;
+        resolve();
+      }
+    }
+    tick();
+  });
+}
+
+function setLoadingPhase(text, sub=''){
+  const el=document.getElementById('loadingPhaseText');
+  const sub_el=document.getElementById('loadingSubText');
+  if(el) el.textContent=text;
+  if(sub_el) sub_el.textContent=sub;
+}
+
+// ── Renderizar expediente ──────────────────────────────────────────────────
+async function renderExpediente(results){
+  const total  = results.length;
+  const passed = results.filter(r=>r.cumple).length;
+  const failed = total - passed;
+  const now    = new Date();
+  const fecha  = now.toLocaleDateString('es-UY',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const hora   = now.toLocaleTimeString('es-UY',{hour:'2-digit',minute:'2-digit'});
+  docCounter++;
+
+  setLoadingPhase('// GENERANDO EXPEDIENTE...','Preparando estructura del documento');
+  await new Promise(r=>setTimeout(r,400));
+
+  // ── Estructura estática (aparece de golpe) ─────────────────────────────
+  document.getElementById('expNumero').innerHTML =
+    `Expediente N.° ADI-${docCounter}<br>Fecha: ${fecha}<br>Hora: ${hora} hrs<br>Código: FMT-001-${passed}/${total}`;
+
+  const sg=document.getElementById('selloGrande');
+  if(passed===total){
+    sg.className='sello-grande aprobado';
+    sg.innerHTML='<div class="sg-top">EXPEDIENTE</div><div class="sg-mid">APROBADO</div><div class="sg-bot">SIN OBSERVACIONES</div>';
+  }else if(passed===0){
+    sg.className='sello-grande observado';
+    sg.innerHTML='<div class="sg-top">EXPEDIENTE</div><div class="sg-mid">OBSERVADO</div><div class="sg-bot">REQUIERE CORRECCIÓN</div>';
+  }else{
+    sg.className='sello-grande parcial';
+    sg.innerHTML=`<div class="sg-top">APROBADO</div><div class="sg-mid">${passed}/${total}</div><div class="sg-bot">CON OBSERVACIONES</div>`;
+  }
+
+  const archNombre=selectedFile?selectedFile.name:'—';
+  document.getElementById('expDatos').innerHTML=`
+    <div class="exp-dato"><div class="exp-dato-label">Archivo analizado</div><div class="exp-dato-val">${archNombre}</div></div>
+    <div class="exp-dato"><div class="exp-dato-label">Parámetros controlados</div><div class="exp-dato-val">${total} criterios de formato</div></div>
+    <div class="exp-dato"><div class="exp-dato-label">Conformes</div><div class="exp-dato-val">${passed} de ${total}</div></div>
+    <div class="exp-dato"><div class="exp-dato-label">Observados</div><div class="exp-dato-val">${failed} de ${total}</div></div>
+  `;
+
+  // Render estructura de parámetros (sello + nombre, obs vacío)
+  const paramList=document.getElementById('paramList');
+  paramList.innerHTML='';
+  const obsEls=[];
+  results.forEach(r=>{
+    const div=document.createElement('div');
+    div.className='param-item'; // starts opacity:0
+    const obsId=`obs-${r.id}`;
+    div.innerHTML=`
+      <div class="param-sello ${r.cumple?'ok':'obs'}">
+        <div class="ps-num">PAR. ${r.id}</div>
+        <div class="ps-icon">${r.cumple?'✓':'✗'}</div>
+        <div class="ps-txt">${r.cumple?'CONFORME':'OBSERVADO'}</div>
+      </div>
+      <div class="param-content">
+        <div class="param-nombre">${r.nombre.toUpperCase()}</div>
+        <div class="param-obs" id="${obsId}"></div>
+      </div>`;
+    paramList.appendChild(div);
+    obsEls.push({div, obsId, obs:r.obs});
+  });
+
+  // Preparar dictamen label (texto vacío)
+  document.getElementById('expDictamen').innerHTML=`
+    <div class="exp-dictamen-label">// Dictamen</div>
+    <div class="exp-dictamen-text" id="dictamenText"></div>
+  `;
+
+  // Limpiar secciones que se van a tipear
+  document.getElementById('expMensajeEstudiante').innerHTML='';
+  document.getElementById('expAvisoIA').innerHTML='';
+
+  // ── Mostrar el expediente ──────────────────────────────────────────────
+  document.getElementById('loadingPanel').style.display='none';
+  document.getElementById('uploadSection').style.opacity='1';
+  document.getElementById('expedientePanel').style.display='block';
+  await new Promise(r=>setTimeout(r,80));
+  document.getElementById('expedientePanel').scrollIntoView({behavior:'smooth',block:'start'});
+  await new Promise(r=>setTimeout(r,500));
+
+  // ── 1. Typewriter: dictamen ────────────────────────────────────────────
+  let dictamenHtml='';
+  if(passed===total){
+    dictamenHtml=`Habiéndose procedido al análisis formal del expediente remitido, se informa que el documento cumple satisfactoriamente con la totalidad de los parámetros de formato establecidos. En consecuencia, se declara el presente expediente <strong>APROBADO SIN OBSERVACIONES</strong> y habilitado para su entrega.`;
+  }else if(passed===0){
+    dictamenHtml=`Habiéndose procedido al análisis formal del expediente remitido, se informa que el documento no cumple con ninguno de los parámetros de formato establecidos. En consecuencia, se declara el presente expediente <strong>OBSERVADO</strong> y se solicita su revisión integral antes de proceder con la entrega.`;
+  }else{
+    const obs=results.filter(r=>!r.cumple).map(r=>`Parámetro ${r.id} (${r.nombre})`).join('; ');
+    dictamenHtml=`Habiéndose procedido al análisis formal del expediente remitido, se informa que el documento cumple parcialmente con los parámetros establecidos (${passed} de ${total} conformes). Se registran observaciones en: <strong>${obs}</strong>. Se solicita corrección de los ítems observados antes de la entrega final.`;
+  }
+  await typewrite(document.getElementById('dictamenText'), dictamenHtml, 14);
+  await new Promise(r=>setTimeout(r,200));
+
+  // ── 2. Typewriter: parámetros uno por uno ─────────────────────────────
+  for(const {div, obsId, obs} of obsEls){
+    div.classList.add('visible'); // fade in el bloque
+    await new Promise(r=>setTimeout(r,120));
+    await typewrite(document.getElementById(obsId), obs, 12);
+    await new Promise(r=>setTimeout(r,80));
+  }
+
+  await new Promise(r=>setTimeout(r,300));
+
+  // ── 3. Typewriter: mensaje al estudiante ──────────────────────────────
+  const missingNames=results.filter(r=>!r.cumple).map(r=>r.nombre);
+  const mensajeEl=document.getElementById('expMensajeEstudiante');
+
+  let mensajeInnerHtml='', mensajeTxt='';
+  if(passed===total){
+    mensajeTxt='¡Tu documento está listo! Cumplís con todos los criterios de formato establecidos. Podés entregarlo así como está. Buen trabajo.';
+    mensajeInnerHtml=`¡Tu documento está listo! 🎉 Cumplís con todos los criterios de formato establecidos.<br><strong>Podés entregarlo así como está.</strong> Buen trabajo.`;
+  }else{
+    const lista=missingNames.map(n=>`<strong>${n}</strong>`).join(', ');
+    mensajeTxt=`Tu documento está casi listo, pero todavía hay ${missingNames.length===1?'un punto':'algunos puntos'} para ajustar antes de entregarlo. Revisá ${missingNames.length===1?'este criterio':'estos criterios'}: ${missingNames.join(', ')}. Una vez que lo corrijas, volvé a verificar antes de entregar. ¡Ya falta poco!`;
+    mensajeInnerHtml=`Tu documento está casi listo, pero todavía hay ${missingNames.length===1?'un punto':'algunos puntos'} para ajustar antes de entregarlo.<br><br>Revisá ${missingNames.length===1?'este criterio':'estos criterios'}: ${lista}.<br><br>Una vez que lo corrijas, <strong>volvé a verificar antes de entregar</strong>. ¡Ya falta poco!`;
+  }
+
+  const claseMsg = passed===total ? 'ok' : 'fix';
+  mensajeEl.innerHTML=`
+    <div class="exp-mensaje ${claseMsg}">
+      <div class="exp-mensaje-label">// Para vos</div>
+      <div id="mensajeTxtEl"></div>
+    </div>`;
+  await new Promise(r=>setTimeout(r,100));
+  await typewrite(document.getElementById('mensajeTxtEl'), mensajeInnerHtml, 15);
+
+  await new Promise(r=>setTimeout(r,200));
+
+  // ── 4. Typewriter: aviso IA ───────────────────────────────────────────
+  const avisoEl=document.getElementById('expAvisoIA');
+  avisoEl.innerHTML=`
+    <div class="exp-aviso-ia">
+      <span class="aviso-icon">⚠</span>
+      <span class="aviso-txt" id="avisoTxtEl"></span>
+    </div>`;
+  await typewrite(
+    document.getElementById('avisoTxtEl'),
+    'Este es un corrector automático basado en análisis de archivos Word. Puede cometer errores, especialmente con formatos heredados de estilos o configuraciones no estándar. Si el resultado no te convence, revisá el documento manualmente.',
+    10
+  );
+}
+
+function resetForm(){
+  selectedFile=null;
+  fileInput.value='';
+  fileNameEl.textContent='';
+  analyzeBtn.disabled=true;
+  document.getElementById('expedientePanel').style.display='none';
+  document.getElementById('uploadSection').style.opacity='1';
+  hideError();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>
