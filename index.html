@@ -9,20 +9,20 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* ══ PALETA TERMINAL ══ */
+    /* ══ PALETA ══ */
     :root {
-      --bg:       #0d1117;
-      --surf:     #161b22;
-      --surf2:    #21262d;
-      --surf3:    #2d333b;
-      --bdr:      rgba(255,255,255,0.09);
-      --bdr-hi:   rgba(255,255,255,0.18);
-      --text:     #e6edf3;
-      --text-dim: #7d8590;
-      --text-lo:  #484f58;
-      --acc:      #ffd700;
-      --acc-dim:  #b89b00;
-      --acc-pale: rgba(255,215,0,0.08);
+      --bg:       #111520;
+      --surf:     #1a1f2e;
+      --surf2:    #222840;
+      --surf3:    #2a3050;
+      --bdr:      rgba(255,255,255,0.08);
+      --bdr-hi:   rgba(255,255,255,0.16);
+      --text:     #dde3f0;
+      --text-dim: #8892aa;
+      --text-lo:  #50586e;
+      --acc:      #f5c518;
+      --acc-dim:  #c49a10;
+      --acc-pale: rgba(245,197,24,0.08);
       --fail:     #f85149;
       --fail-dim: #aa2f2a;
       --fail-pale:rgba(248,81,73,0.08);
@@ -50,58 +50,171 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 48px 20px 80px;
-    }
-    body::before {
-      content: '';
-      position: fixed; inset: 0;
-      background: repeating-linear-gradient(
-        0deg, transparent, transparent 3px,
-        rgba(255,255,255,0.012) 3px, rgba(255,255,255,0.012) 4px
-      );
-      pointer-events: none; z-index: 0;
+      padding: 56px 24px 80px;
     }
 
-    .wrap { position: relative; z-index: 1; width: 100%; max-width: 640px; display: flex; flex-direction: column; gap: 16px; }
+    .wrap { position: relative; z-index: 1; width: 100%; max-width: 580px; display: flex; flex-direction: column; gap: 20px; }
 
-    /* ── Header terminal ────────────────────── */
-    header { text-align: center; margin-bottom: 8px; }
-    .agency-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 18px; }
-    .agency-line { flex: 1; height: 1px; background: var(--bdr); max-width: 80px; }
-    .agency-tag { font-family: 'Orbitron', monospace; font-size: 0.6rem; letter-spacing: 4px; color: var(--text-dim); text-transform: uppercase; }
-    h1 { font-family: 'Orbitron', monospace; font-size: clamp(1.2rem,4.5vw,1.8rem); font-weight: 900; color: var(--acc); letter-spacing: 0.06em; line-height: 1.2; text-shadow: 0 0 24px rgba(255,215,0,0.25); }
-    .subtitle { font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; margin-top: 8px; text-transform: uppercase; font-family: 'Share Tech Mono', monospace; }
+    /* ── Header ─────────────────────────────── */
+    header { text-align: center; margin-bottom: 12px; }
 
-    /* ── Panel terminal ─────────────────────── */
-    .panel { background: var(--surf); border: 1px solid var(--bdr); border-radius: 6px; overflow: hidden; }
-    .panel-header { background: var(--surf2); border-bottom: 1px solid var(--bdr); padding: 10px 18px; display: flex; align-items: center; gap: 10px; }
-    .ph-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--acc); animation: blink 2.8s ease-in-out infinite; flex-shrink: 0; }
+    .agency-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 20px; }
+    .agency-line { flex: 1; height: 1px; background: var(--bdr); max-width: 60px; }
+    .agency-tag {
+      font-family: 'Orbitron', monospace;
+      font-size: 0.58rem;
+      letter-spacing: 4px;
+      color: var(--text-lo);
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(1.6rem, 5vw, 2.2rem);
+      font-weight: 900;
+      color: var(--acc);
+      letter-spacing: 0.1em;
+      line-height: 1.1;
+    }
+    .subtitle {
+      font-family: 'Exo 2', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 400;
+      color: var(--text-dim);
+      margin-top: 10px;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Panel ───────────────────────────────── */
+    .panel {
+      background: var(--surf);
+      border: 1px solid var(--bdr);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .panel-header {
+      background: var(--surf2);
+      border-bottom: 1px solid var(--bdr);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ph-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--acc);
+      animation: blink 2.8s ease-in-out infinite;
+      flex-shrink: 0;
+    }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
-    .ph-title { font-family: 'Orbitron', monospace; font-size: 0.58rem; font-weight: 700; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; }
-    .ph-right { margin-left: auto; font-family: 'Share Tech Mono', monospace; font-size: 0.6rem; color: var(--text-lo); letter-spacing: 1px; }
-    .panel-body { padding: 18px; }
+    .ph-title {
+      font-family: 'Exo 2', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+    .ph-right {
+      margin-left: auto;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--text-lo);
+      letter-spacing: 1px;
+    }
+    .panel-body { padding: 20px; }
 
-    /* ── Criteria list ──────────────────────── */
-    .criteria-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
-    .criteria-list li { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; background: var(--surf2); border: 1px solid var(--bdr); border-radius: 4px; font-size: 0.82rem; color: var(--text); font-family: 'Share Tech Mono', monospace; }
-    .criteria-list li .ci { color: var(--acc); font-weight: 700; flex-shrink: 0; min-width: 20px; }
-    .criteria-list li strong { color: var(--acc); }
+    /* ── Criteria list ───────────────────────── */
+    .criteria-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .criteria-list li {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+      background: var(--surf2);
+      border: 1px solid var(--bdr);
+      border-radius: 8px;
+      font-family: 'Exo 2', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 400;
+      color: var(--text);
+      line-height: 1.4;
+    }
+    .criteria-list li .ci {
+      font-family: 'Orbitron', monospace;
+      font-size: 0.58rem;
+      font-weight: 700;
+      color: var(--acc);
+      flex-shrink: 0;
+      min-width: 22px;
+      opacity: 0.7;
+    }
+    .criteria-list li strong { color: var(--text); font-weight: 700; }
 
-    /* ── Dropzone ───────────────────────────── */
-    .dropzone { border: 1px dashed var(--bdr-hi); border-radius: 4px; padding: 36px 20px; text-align: center; cursor: pointer; position: relative; transition: border-color 0.2s, background 0.2s; }
-    .dropzone:hover, .dropzone.drag-over { border-color: var(--acc-dim); background: var(--acc-pale); }
+    /* ── Dropzone ────────────────────────────── */
+    .dropzone {
+      border: 2px dashed var(--bdr-hi);
+      border-radius: 10px;
+      padding: 40px 24px;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .dropzone:hover, .dropzone.drag-over {
+      border-color: var(--acc-dim);
+      background: var(--acc-pale);
+    }
     .dropzone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-    .drop-icon { font-size: 2rem; margin-bottom: 10px; display: block; }
-    .drop-label { font-family: 'Share Tech Mono', monospace; font-size: 0.78rem; color: var(--text-dim); letter-spacing: 1px; }
-    .drop-sub { font-size: 0.68rem; color: var(--text-lo); margin-top: 5px; letter-spacing: 1px; font-family: 'Share Tech Mono', monospace; }
-    .file-chosen { margin-top: 10px; font-size: 0.78rem; color: var(--acc); font-family: 'Share Tech Mono', monospace; letter-spacing: 0.5px; }
+    .drop-icon { font-size: 2.4rem; margin-bottom: 12px; display: block; }
+    .drop-label {
+      font-family: 'Exo 2', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      letter-spacing: 0.3px;
+    }
+    .drop-sub {
+      font-size: 0.78rem;
+      color: var(--text-lo);
+      margin-top: 6px;
+    }
+    .file-chosen {
+      margin-top: 12px;
+      font-size: 0.82rem;
+      color: var(--acc);
+      font-family: 'Share Tech Mono', monospace;
+    }
 
-    /* ── Button ─────────────────────────────── */
-    .btn { width: 100%; padding: 14px; background: transparent; color: var(--acc); border: 1px solid var(--acc-dim); border-radius: 4px; font-family: 'Orbitron', monospace; font-size: 0.7rem; font-weight: 700; letter-spacing: 3px; cursor: pointer; text-transform: uppercase; transition: background 0.2s, box-shadow 0.2s; margin-top: 14px; }
-    .btn:hover:not(:disabled) { background: var(--acc-pale); box-shadow: 0 0 18px rgba(255,215,0,0.15); }
+    /* ── Button ──────────────────────────────── */
+    .btn {
+      width: 100%;
+      padding: 15px;
+      background: var(--acc);
+      color: #111520;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Exo 2', sans-serif;
+      font-size: 0.92rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s, opacity 0.2s;
+      margin-top: 14px;
+    }
+    .btn:hover:not(:disabled) {
+      background: #ffd84d;
+      box-shadow: 0 4px 20px rgba(245,197,24,0.25);
+    }
     .btn:disabled { opacity: 0.3; cursor: not-allowed; }
-    .btn-sec { color: var(--text-dim); border-color: var(--bdr-hi); }
-    .btn-sec:hover:not(:disabled) { background: rgba(255,255,255,0.04); color: var(--text); box-shadow: none; }
+    .btn-sec {
+      background: transparent;
+      color: var(--text-dim);
+      border: 1px solid var(--bdr-hi);
+      font-family: 'Exo 2', sans-serif;
+    }
+    .btn-sec:hover:not(:disabled) { background: rgba(255,255,255,0.05); color: var(--text); box-shadow: none; }
 
     /* ── Loading ─────────────────────────────── */
     #loadingPanel { display: none; }
@@ -372,7 +485,7 @@
     .btn-bajo { max-width: 640px; width: 100%; }
 
     /* ── Footer ──────────────────────────────── */
-    footer { margin-top: 40px; font-family: 'Share Tech Mono', monospace; font-size: 0.6rem; color: var(--text-lo); letter-spacing: 2px; text-align: center; text-transform: uppercase; position: relative; z-index: 1; }
+    footer { margin-top: 40px; font-family: 'Exo 2', sans-serif; font-size: 0.72rem; color: var(--text-lo); letter-spacing: 0.5px; text-align: center; position: relative; z-index: 1; }
 
     /* ── Mensaje al estudiante ──────────────── */
     .exp-mensaje {
@@ -533,25 +646,25 @@
       <div class="agency-line"></div>
     </div>
     <h1>ADI</h1>
-    <p class="subtitle">Agencia de Inteligencia Digital</p>
+    <p class="subtitle">Agencia de Inteligencia Digital — verificá el formato de tu informe</p>
   </header>
 
   <!-- Upload section -->
   <div id="uploadSection">
 
     <!-- Parámetros -->
-    <div class="panel" style="margin-bottom:16px">
+    <div class="panel" style="margin-bottom:20px">
       <div class="panel-header">
         <div class="ph-dot"></div>
-        <span class="ph-title">Parámetros de control</span>
-        <span class="ph-right">REF-FMT-001</span>
+        <span class="ph-title">¿Qué se verifica?</span>
+        <span class="ph-right">FMT-001</span>
       </div>
       <div class="panel-body">
         <ul class="criteria-list">
-          <li><span class="ci">01</span> Título con tamaño <strong>14pt</strong> y efecto <strong>negrita</strong></li>
+          <li><span class="ci">01</span> Título con tamaño <strong>14pt</strong> y <strong>negrita</strong></li>
           <li><span class="ci">02</span> Cuerpo del texto en tamaño <strong>12pt</strong></li>
           <li><span class="ci">03</span> Uso de <strong>viñetas</strong> en al menos un listado</li>
-          <li><span class="ci">04</span> Texto resaltado en <strong>negrita</strong> dentro del cuerpo</li>
+          <li><span class="ci">04</span> Algún texto en <strong>negrita</strong> dentro del cuerpo</li>
           <li><span class="ci">05</span> Al menos un <strong>hipervínculo</strong> insertado</li>
         </ul>
       </div>
@@ -561,19 +674,19 @@
     <div class="panel">
       <div class="panel-header">
         <div class="ph-dot"></div>
-        <span class="ph-title">Cargar expediente</span>
+        <span class="ph-title">Subí tu documento</span>
       </div>
       <div class="panel-body">
         <div class="dropzone" id="dropzone">
           <input type="file" id="fileInput" accept=".docx"/>
           <span class="drop-icon">📄</span>
-          <p class="drop-label">// SOLTAR ARCHIVO AQUÍ O HACER CLIC</p>
-          <p class="drop-sub">FORMATO: .docx · MÁX 20 MB</p>
+          <p class="drop-label">Arrastrá tu archivo acá o hacé clic para elegirlo</p>
+          <p class="drop-sub">Solo archivos Word (.docx) · Máximo 20 MB</p>
           <p class="file-chosen" id="fileName"></p>
         </div>
         <div class="error-box" id="errorBox"></div>
         <button class="btn" id="analyzeBtn" disabled onclick="analyzeDocument()">
-          ⬡ &nbsp; INICIAR ANÁLISIS &nbsp; ⬡
+          Verificar formato
         </button>
       </div>
     </div>
@@ -585,7 +698,7 @@
     <div class="panel-body">
       <div class="loading-inner">
         <div class="loading-label-row">
-          <span class="loading-text" id="loadingPhaseText">// REVISANDO...</span>
+          <span class="loading-text" id="loadingPhaseText">Revisando tu documento...</span>
           <span class="loading-pct" id="loadingSubText"></span>
         </div>
         <div class="loading-bar-track">
@@ -788,11 +901,11 @@ async function analyzeDocument(){
   await new Promise(r=>setTimeout(r,40));
 
   try{
-    setLoadingPhase('// REVISANDO...','Descomprimiendo el documento Word');
+    setLoadingPhase('Revisando tu documento...','Descomprimiendo el archivo Word');
     await new Promise(r=>setTimeout(r,350));
     const zip=await JSZip.loadAsync(await selectedFile.arrayBuffer());
 
-    setLoadingPhase('// REVISANDO...','Leyendo parámetros de formato');
+    setLoadingPhase('Revisando tu documento...','Leyendo parámetros de formato');
     await new Promise(r=>setTimeout(r,300));
     const docXmlStr =await zip.file('word/document.xml').async('string');
     const stylesFile=zip.file('word/styles.xml');
@@ -974,7 +1087,7 @@ async function renderExpediente(results){
   const hora   = now.toLocaleTimeString('es-UY',{hour:'2-digit',minute:'2-digit'});
   docCounter++;
 
-  setLoadingPhase('// REVISANDO...','Preparando el expediente');
+  setLoadingPhase('Revisando tu documento...','Preparando el expediente');
   await new Promise(r=>setTimeout(r,400));
 
   // ── Estructura estática (aparece de golpe) ─────────────────────────────
